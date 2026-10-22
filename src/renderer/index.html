@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src * file: data: blob:; media-src * file: data:; font-src 'self' data:; object-src 'none'; frame-src 'none'"
+    />
+    <title>MD Explorer</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style id="code-theme"></style>
+    <style id="custom-theme"></style>
+  </head>
+  <body>
+    <header id="toolbar">
+      <div class="tb-group">
+        <button id="btn-toggle-sidebar" class="icon-btn" title="Toggle explorer (Ctrl/Cmd+B)">☰</button>
+        <button id="btn-open-folder" class="tb-btn" title="Open folder (Ctrl/Cmd+Shift+O)">Open Folder</button>
+        <button id="btn-open-file" class="tb-btn" title="Open file (Ctrl/Cmd+O)">Open File</button>
+      </div>
+      <div id="doc-title" class="tb-title"></div>
+      <div class="tb-group">
+        <select id="theme-quick" title="Theme"></select>
+        <button id="btn-toc" class="icon-btn" title="Table of contents">≡</button>
+        <button id="btn-settings" class="icon-btn" title="Settings (Ctrl/Cmd+,)">⚙</button>
+      </div>
+    </header>
+
+    <div id="layout">
+      <aside id="sidebar">
+        <div class="sb-header">
+          <select id="roots" title="Locations"></select>
+          <button id="btn-up" class="icon-btn" title="Go to parent folder">↑</button>
+          <button id="btn-refresh" class="icon-btn" title="Refresh">⟳</button>
+        </div>
+        <div id="current-path" class="sb-path" title=""></div>
+        <input id="filter" type="search" placeholder="Filter files…" spellcheck="false" />
+        <div id="tree" role="tree" tabindex="0"></div>
+        <label class="sb-footer">
+          <input type="checkbox" id="show-all" /> Show all files
+        </label>
+      </aside>
+      <div id="resizer" title="Drag to resize"></div>
+
+      <main id="content-wrap">
+        <div id="find-bar" hidden>
+          <input id="find-input" type="search" placeholder="Find in document…" />
+          <span id="find-count"></span>
+          <button id="find-prev" class="icon-btn" title="Previous">↑</button>
+          <button id="find-next" class="icon-btn" title="Next">↓</button>
+          <button id="find-close" class="icon-btn" title="Close">✕</button>
+        </div>
+        <article id="content" class="markdown-body"></article>
+        <nav id="toc" hidden></nav>
+      </main>
+    </div>
+
+    <footer id="statusbar">
+      <span id="status-path"></span>
+      <span id="status-info"></span>
+    </footer>
+
+    <div id="settings-overlay" hidden>
+      <div id="settings-panel" role="dialog" aria-label="Settings">
+        <div class="sp-header">
+          <h2>Settings</h2>
+          <button id="settings-close" class="icon-btn" title="Close">✕</button>
+        </div>
+        <section>
+          <h3>Theme</h3>
+          <div id="theme-grid"></div>
+          <div class="row">
+            <button id="btn-themes-folder" class="tb-btn">Open custom themes folder</button>
+            <button id="btn-themes-reload" class="tb-btn">Reload custom themes</button>
+          </div>
+          <p class="hint">
+            Drop <code>.css</code> files into the custom themes folder. Override the CSS variables listed in the README
+            (e.g. <code>:root { --bg: #000; --fg: #eee; }</code>).
+          </p>
+        </section>
+        <section>
+          <h3>Code highlighting</h3>
+          <label class="field">Code theme <select id="code-theme-select"></select></label>
+        </section>
+        <section>
+          <h3>Typography</h3>
+          <label class="field"
+            >Font
+            <select id="font-select">
+              <option value="system">System sans-serif</option>
+              <option value="serif">Serif</option>
+              <option value="mono">Monospace</option>
+              <option value="humanist">Humanist</option>
+            </select>
+          </label>
+          <label class="field">Text size <input id="font-size" type="range" min="12" max="24" step="1" /><span id="font-size-val"></span></label>
+          <label class="field"
+            >Content width <input id="content-width" type="range" min="560" max="1600" step="20" /><span id="content-width-val"></span
+          ></label>
+        </section>
+      </div>
+    </div>
+
+    <script src="themes.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>
