@@ -10,6 +10,10 @@ const anchor = anchorModule.default || anchorModule;
 
 function highlight(code, lang) {
   const language = (lang || '').trim().toLowerCase();
+  if (language === 'mermaid') {
+    // Rendered client-side by the renderer; keep the source as escaped text.
+    return `<pre class="mermaid-block">${md.utils.escapeHtml(code)}</pre>`;
+  }
   let html;
   if (language && hljs.getLanguage(language)) {
     html = hljs.highlight(code, { language, ignoreIllegals: true }).value;

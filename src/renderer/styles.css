@@ -683,3 +683,18 @@ pre.code-block:hover .copy-btn {
   background-clip: content-box;
   border: 2px solid transparent;
 }
+
+/* Mermaid diagrams */
+.markdown-body pre.mermaid-block {
+  background: transparent;
+  text-align: center;
+  overflow-x: auto;
+  white-space: pre;
+}
+.markdown-body pre.mermaid-block svg { max-width: 100%; height: auto; }
+.markdown-body pre.mermaid-block.mermaid-error {
+  text-align: left;
+  background: var(--code-bg);
+  border: 1px solid #d1242f;
+  font-family: ui-monospace, monospace;
+}

@@ -104,6 +104,7 @@ async function applyTheme() {
   let code = state.settings.codeTheme;
   if (!code || code === 'auto') code = theme.code || (theme.dark ? 'github-dark' : 'github');
   $('#code-theme').textContent = await api.codeThemeCss(code);
+  if (el.content.querySelector('.mermaid-block')) renderMermaid();
 
   el.themeQuick.value = theme.id;
   document.querySelectorAll('.theme-card').forEach((c) => c.classList.toggle('selected', c.dataset.id === theme.id));
@@ -417,6 +418,51 @@ function showWelcome() {
   el.toc.innerHTML = '';
 }
 
+// ---- Mermaid ----------------------------------------------------------------
+
+let mermaidLoading = null;
+let mermaidSeq = 0;
+
+function loadMermaid() {
+  if (window.mermaid) return Promise.resolve(window.mermaid);
+  if (!mermaidLoading) {
+    mermaidLoading = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '../../node_modules/mermaid/dist/mermaid.min.js';
+      s.onload = () => resolve(window.mermaid);
+      s.onerror = () => reject(new Error('Could not load mermaid'));
+      document.head.appendChild(s);
+    });
+  }
+  return mermaidLoading;
+}
+
+async function renderMermaid() {
+  const blocks = el.content.querySelectorAll('.mermaid-block');
+  if (!blocks.length) return;
+  let mermaid;
+  try {
+    mermaid = await loadMermaid();
+  } catch {
+    return;
+  }
+  const dark = findTheme(state.settings.theme).dark;
+  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' });
+  for (const block of blocks) {
+    if (!block.dataset.src) block.dataset.src = block.textContent;
+    try {
+      const { svg } = await mermaid.render('mermaid-' + ++mermaidSeq, block.dataset.src);
+      block.innerHTML = svg;
+      block.classList.remove('mermaid-error');
+    } catch (err) {
+      document.getElementById('dmermaid-' + mermaidSeq)?.remove();
+      block.textContent = block.dataset.src;
+      block.classList.add('mermaid-error');
+      block.title = String(err.message || err);
+    }
+  }
+}
+
 async function openFile(filePath, { hash, keepScroll } = {}) {
   const scroll = el.contentWrap.scrollTop;
   let result;
@@ -441,6 +487,7 @@ async function openFile(filePath, { hash, keepScroll } = {}) {
   el.statusPath.textContent = filePath;
   el.statusInfo.textContent = `${result.words.toLocaleString()} words · ~${Math.max(1, Math.round(result.words / 230))} min read`;
   buildToc(result.toc);
+  renderMermaid();
 
   if (keepScroll && !switching) el.contentWrap.scrollTop = scroll;
   else if (hash) scrollToAnchor(hash);
