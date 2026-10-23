@@ -437,6 +437,78 @@ function loadMermaid() {
   return mermaidLoading;
 }
 
+// Zoom (Ctrl/Cmd+wheel, pinch, buttons) and pan (drag) for a rendered diagram.
+function setupPanZoom(block) {
+  const stage = block.querySelector('.mm-stage');
+  const view = { x: 0, y: 0, s: 1 };
+  const apply = () => {
+    stage.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`;
+  };
+  // Zoom keeping the point (px, py), in block padding-box coordinates, fixed on screen.
+  const zoomAt = (factor, px, py) => {
+    const s = Math.min(10, Math.max(0.2, view.s * factor));
+    const cx = stage.offsetLeft + stage.offsetWidth / 2;
+    const cy = stage.offsetTop + stage.offsetHeight / 2;
+    const k = s / view.s;
+    view.x = px - cx - (px - cx - view.x) * k;
+    view.y = py - cy - (py - cy - view.y) * k;
+    view.s = s;
+    apply();
+  };
+  const local = (e) => {
+    const r = block.getBoundingClientRect();
+    return [e.clientX - r.left - block.clientLeft, e.clientY - r.top - block.clientTop];
+  };
+  const reset = () => {
+    view.x = view.y = 0;
+    view.s = 1;
+    apply();
+  };
+
+  block.addEventListener(
+    'wheel',
+    (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return; // plain wheel keeps scrolling the document
+      e.preventDefault();
+      const [px, py] = local(e);
+      zoomAt(Math.exp(-e.deltaY * 0.01), px, py);
+    },
+    { passive: false }
+  );
+  block.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('.mm-controls')) return;
+    block.setPointerCapture(e.pointerId);
+    block.classList.add('mm-panning');
+    let lx = e.clientX;
+    let ly = e.clientY;
+    const move = (ev) => {
+      view.x += ev.clientX - lx;
+      view.y += ev.clientY - ly;
+      lx = ev.clientX;
+      ly = ev.clientY;
+      apply();
+    };
+    const up = () => {
+      block.classList.remove('mm-panning');
+      block.removeEventListener('pointermove', move);
+      block.removeEventListener('pointerup', up);
+      block.removeEventListener('pointercancel', up);
+    };
+    block.addEventListener('pointermove', move);
+    block.addEventListener('pointerup', up);
+    block.addEventListener('pointercancel', up);
+  });
+  block.addEventListener('dblclick', (e) => {
+    if (!e.target.closest('.mm-controls')) reset();
+  });
+  block.querySelector('.mm-controls').addEventListener('click', (e) => {
+    const act = e.target.dataset.mm;
+    if (!act) return;
+    if (act === 'reset') return reset();
+    zoomAt(act === 'in' ? 1.25 : 0.8, block.clientWidth / 2, block.clientHeight / 2);
+  });
+}
+
 async function renderMermaid() {
   const blocks = el.content.querySelectorAll('.mermaid-block');
   if (!blocks.length) return;
@@ -452,8 +524,13 @@ async function renderMermaid() {
     if (!block.dataset.src) block.dataset.src = block.textContent;
     try {
       const { svg } = await mermaid.render('mermaid-' + ++mermaidSeq, block.dataset.src);
-      block.innerHTML = svg;
+      block.innerHTML =
+        '<div class="mm-controls"><button type="button" data-mm="in" title="Zoom in">+</button>' +
+        '<button type="button" data-mm="out" title="Zoom out">−</button>' +
+        '<button type="button" data-mm="reset" title="Reset view">⟲</button></div>' +
+        `<div class="mm-stage">${svg}</div>`;
       block.classList.remove('mermaid-error');
+      setupPanZoom(block);
     } catch (err) {
       document.getElementById('dmermaid-' + mermaidSeq)?.remove();
       block.textContent = block.dataset.src;

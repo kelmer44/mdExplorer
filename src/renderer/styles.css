@@ -688,9 +688,26 @@ pre.code-block:hover .copy-btn {
 .markdown-body pre.mermaid-block {
   background: transparent;
   text-align: center;
-  overflow-x: auto;
+  overflow: hidden;
   white-space: pre;
+  position: relative;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
 }
+.markdown-body pre.mermaid-block.mm-panning { cursor: grabbing; }
+.mm-stage { width: 100%; transform-origin: center center; }
+.mm-stage svg { display: block; margin: 0 auto; }
+.mm-controls {
+  position: absolute; top: 6px; right: 6px; z-index: 1;
+  display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s;
+}
+.mermaid-block:hover .mm-controls { opacity: 1; }
+.mm-controls button {
+  width: 26px; height: 26px; padding: 0; line-height: 1; cursor: pointer;
+  background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 6px;
+}
+.mm-controls button:hover { background: var(--hover); }
 .markdown-body pre.mermaid-block svg { max-width: 100%; height: auto; }
 .markdown-body pre.mermaid-block.mermaid-error {
   text-align: left;

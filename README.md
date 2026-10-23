@@ -19,6 +19,7 @@ A cross-platform (macOS, Windows, Linux) Markdown viewer with a file explorer, t
 - **Explorer pane**: browse any folder or the whole file system (Home, Desktop, Documents, drives/volumes). Folders load lazily, you can filter by name, and the tree works with the arrow keys. Double-click a folder to make it the root. The pane can be resized or hidden (`Ctrl/Cmd+B`).
 - **Markdown rendering** with [markdown-it](https://github.com/markdown-it/markdown-it): tables, task lists, heading anchors, auto-links, and inline HTML (sanitized, so scripts are stripped).
 - **Syntax highlighting** with [highlight.js](https://highlightjs.org/) (190+ languages, 100+ code themes), plus a copy button on code blocks.
+- **Mermaid diagrams** from ```` ```mermaid ```` code blocks, themed to match, with zoom (Ctrl/Cmd+scroll, pinch or buttons) and drag-to-pan; double-click resets the view.
 - **Themes**: 8 built-in themes (GitHub Light/Dark, Dracula, Nord, Solarized Light/Dark, Sepia, One Dark). You can add your own as CSS files. Font, text size and content width are adjustable.
 - **Live reload**: the open file re-renders when it changes on disk.
 - Relative links to other `.md` files open in the app, relative images load, and external links open in your browser.
