@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   openFileDialog: invoke('dialog:openFile'),
   render: invoke('md:render'),
   watch: invoke('md:watch'),
+  unwatch: invoke('md:unwatch'),
   openExternal: invoke('shell:openExternal'),
   openPath: invoke('shell:openPath'),
   reveal: invoke('shell:reveal'),

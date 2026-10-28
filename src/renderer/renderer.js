@@ -8,12 +8,14 @@ const state = {
   settings: {},
   root: null,
   currentFile: null,
+  tabs: [], // { path, scroll }
   customThemes: [],
   codeThemes: [],
 };
 
 const el = {
   tree: $('#tree'),
+  tabbar: $('#tabbar'),
   content: $('#content'),
   contentWrap: $('#content-wrap'),
   roots: $('#roots'),
@@ -260,7 +262,7 @@ async function revealInTree(filePath) {
 
 function markActive(filePath) {
   el.tree.querySelectorAll('.node-row.active').forEach((r) => r.classList.remove('active'));
-  const node = findNode(filePath);
+  const node = filePath && findNode(filePath);
   if (node) node.querySelector('.node-row').classList.add('active');
 }
 
@@ -540,7 +542,65 @@ async function renderMermaid() {
   }
 }
 
+// ---- Tabs ---------------------------------------------------------------------
+
+function renderTabs() {
+  el.tabbar.hidden = !state.tabs.length;
+  el.tabbar.innerHTML = '';
+  for (const t of state.tabs) {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (t.path === state.currentFile ? ' active' : '');
+    tab.dataset.path = t.path;
+    tab.setAttribute('role', 'tab');
+    tab.title = t.path;
+    tab.innerHTML = '<span class="tab-title"></span><button type="button" class="tab-close" title="Close tab">✕</button>';
+    tab.querySelector('.tab-title').textContent = basename(t.path);
+    el.tabbar.appendChild(tab);
+  }
+  el.tabbar.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+function closeTab(filePath) {
+  const i = state.tabs.findIndex((t) => t.path === filePath);
+  if (i < 0) return;
+  state.tabs.splice(i, 1);
+  api.unwatch(filePath);
+  if (filePath !== state.currentFile) return renderTabs();
+  const next = state.tabs[Math.min(i, state.tabs.length - 1)];
+  if (next) {
+    openFile(next.path);
+  } else {
+    state.currentFile = null;
+    setSetting('lastFile', null);
+    document.title = 'MD Explorer';
+    markActive(null);
+    showWelcome();
+    renderTabs();
+  }
+}
+
+function cycleTab(dir) {
+  if (state.tabs.length < 2) return;
+  const i = state.tabs.findIndex((t) => t.path === state.currentFile);
+  openFile(state.tabs[(i + dir + state.tabs.length) % state.tabs.length].path);
+}
+
+el.tabbar.addEventListener('click', (e) => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  if (e.target.closest('.tab-close')) closeTab(tab.dataset.path);
+  else if (tab.dataset.path !== state.currentFile) openFile(tab.dataset.path);
+});
+// Middle-click closes a tab.
+el.tabbar.addEventListener('auxclick', (e) => {
+  const tab = e.target.closest('.tab');
+  if (tab && e.button === 1) closeTab(tab.dataset.path);
+});
+
 async function openFile(filePath, { hash, keepScroll } = {}) {
+  // Only Markdown/text is rendered; anything else (binaries can be huge) goes to the OS.
+  if (!MD_RE.test(filePath)) return api.openPath(filePath);
+
   const scroll = el.contentWrap.scrollTop;
   let result;
   try {
@@ -554,8 +614,16 @@ async function openFile(filePath, { hash, keepScroll } = {}) {
   }
 
   const switching = state.currentFile !== filePath;
+  const prev = state.tabs.find((t) => t.path === state.currentFile);
+  if (prev && switching) prev.scroll = scroll;
+  let tab = state.tabs.find((t) => t.path === filePath);
+  if (!tab) {
+    tab = { path: filePath, scroll: 0 };
+    state.tabs.push(tab);
+  }
   state.currentFile = filePath;
   setSetting('lastFile', filePath);
+  renderTabs();
 
   el.content.className = 'markdown-body';
   el.content.innerHTML = result.html;
@@ -568,10 +636,10 @@ async function openFile(filePath, { hash, keepScroll } = {}) {
 
   if (keepScroll && !switching) el.contentWrap.scrollTop = scroll;
   else if (hash) scrollToAnchor(hash);
-  else el.contentWrap.scrollTop = 0;
+  else el.contentWrap.scrollTop = tab.scroll || 0;
 
+  api.watch(filePath); // no-op if this tab is already watched
   if (switching) {
-    api.watch(filePath);
     if (!state.root || !isInside(filePath, state.root)) await setRoot(dirname(filePath));
     await revealInTree(filePath);
   }
@@ -796,6 +864,9 @@ api.onMenu((action) => {
     case 'open-file': return openFileDialog();
     case 'open-folder': return openFolderDialog();
     case 'reload': return state.currentFile && openFile(state.currentFile, { keepScroll: true });
+    case 'close-tab': return state.currentFile && closeTab(state.currentFile);
+    case 'next-tab': return cycleTab(1);
+    case 'prev-tab': return cycleTab(-1);
     case 'reveal': return state.currentFile && api.reveal(state.currentFile);
     case 'toggle-sidebar': return setSidebarVisible(!state.settings.sidebarVisible);
     case 'settings': return toggleSettings();

@@ -253,8 +253,69 @@ body.sidebar-hidden #resizer {
 
 /* ---- Content ---------------------------------------------------------- */
 
+#main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#tabbar {
+  flex: none;
+  display: flex;
+  overflow-x: auto;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+}
+#tabbar[hidden] {
+  display: none;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  max-width: 220px;
+  padding: 6px 8px 6px 12px;
+  border-right: 1px solid var(--border);
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.tab:hover {
+  background: var(--hover);
+}
+.tab.active {
+  background: var(--bg);
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
+.tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tab-close {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0.6;
+}
+.tab-close:hover {
+  background: var(--hover);
+  opacity: 1;
+}
+
 #content-wrap {
   flex: 1;
+  min-height: 0;
   min-width: 0;
   overflow: auto;
   position: relative;

@@ -8,7 +8,7 @@ const settings = require('./settings');
 const MD_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd', '.mdx', '.txt']);
 
 let mainWindow = null;
-let watcher = null;
+const watchers = new Map(); // filePath -> fs.FSWatcher
 let pendingOpenPath = null; // file/folder requested before the window was ready
 
 function isMarkdown(p) {
@@ -51,10 +51,14 @@ function send(channel, ...args) {
   if (mainWindow) mainWindow.webContents.send(channel, ...args);
 }
 
-function stopWatching() {
-  if (watcher) {
-    watcher.close();
-    watcher = null;
+function stopWatching(filePath) {
+  const paths = filePath ? [filePath] : [...watchers.keys()];
+  for (const p of paths) {
+    const w = watchers.get(p);
+    if (w) {
+      w.close();
+      watchers.delete(p);
+    }
   }
 }
 
@@ -70,10 +74,14 @@ function buildMenu() {
         { label: 'Open File…', accelerator: 'CmdOrCtrl+O', click: () => send('menu', 'open-file') },
         { label: 'Open Folder…', accelerator: 'CmdOrCtrl+Shift+O', click: () => send('menu', 'open-folder') },
         { type: 'separator' },
+        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => send('menu', 'close-tab') },
+        { label: 'Next Tab', accelerator: 'Ctrl+Tab', click: () => send('menu', 'next-tab') },
+        { label: 'Previous Tab', accelerator: 'Ctrl+Shift+Tab', click: () => send('menu', 'prev-tab') },
+        { type: 'separator' },
         { label: 'Reload File', accelerator: 'CmdOrCtrl+R', click: () => send('menu', 'reload') },
         { label: 'Reveal in File Manager', click: () => send('menu', 'reveal') },
         { type: 'separator' },
-        isMac ? { role: 'close' } : { role: 'quit' },
+        isMac ? { role: 'close', accelerator: 'CmdOrCtrl+Shift+W' } : { role: 'quit' },
       ],
     },
     { role: 'editMenu' },
@@ -175,22 +183,31 @@ ipcMain.handle('dialog:openFile', async () => {
 
 // ---- IPC: markdown ----------------------------------------------------------
 
+const MAX_RENDER_BYTES = 10 * 1024 * 1024;
+
 ipcMain.handle('md:render', async (_e, filePath) => {
+  const { size } = await fs.promises.stat(filePath);
+  if (size > MAX_RENDER_BYTES) throw new Error('File is too large to render (over 10 MB)');
   const source = await fs.promises.readFile(filePath, 'utf8');
   return renderMarkdown(source, filePath);
 });
 
 ipcMain.handle('md:watch', (_e, filePath) => {
-  stopWatching();
+  if (watchers.has(filePath)) return;
   let timer = null;
   try {
-    watcher = fs.watch(filePath, () => {
-      // Editors often write files in several steps; debounce.
-      clearTimeout(timer);
-      timer = setTimeout(() => send('md:changed', filePath), 150);
-    });
+    watchers.set(
+      filePath,
+      fs.watch(filePath, () => {
+        // Editors often write files in several steps; debounce.
+        clearTimeout(timer);
+        timer = setTimeout(() => send('md:changed', filePath), 150);
+      })
+    );
   } catch {}
 });
+
+ipcMain.handle('md:unwatch', (_e, filePath) => stopWatching(filePath));
 
 // ---- IPC: shell -------------------------------------------------------------
 
