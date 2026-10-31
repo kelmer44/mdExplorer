@@ -233,11 +233,18 @@ async function setRoot(dirPath) {
 async function refreshTree() {
   if (!state.root) return;
   const openDirs = [...el.tree.querySelectorAll('.node.open')].map((n) => n.dataset.path);
+  const scrollTop = el.tree.scrollTop;
+  const focusedPath = el.tree.querySelector('.node-row.focused')?.parentElement.dataset.path;
   await fillChildren(el.tree, state.root, 0);
   for (const p of openDirs) {
     const node = findNode(p);
     if (node) await toggleDir(node, true);
   }
+  if (focusedPath) {
+    const node = findNode(focusedPath);
+    if (node) node.querySelector('.node-row').classList.add('focused');
+  }
+  el.tree.scrollTop = scrollTop;
 }
 
 function findNode(p) {
