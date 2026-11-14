@@ -608,7 +608,6 @@ async function openFile(filePath, { hash, keepScroll } = {}) {
   // Only Markdown/text is rendered; anything else (binaries can be huge) goes to the OS.
   if (!MD_RE.test(filePath)) return api.openPath(filePath);
 
-  const scroll = el.contentWrap.scrollTop;
   let result;
   try {
     result = await api.render(filePath);
@@ -621,6 +620,11 @@ async function openFile(filePath, { hash, keepScroll } = {}) {
   }
 
   const switching = state.currentFile !== filePath;
+  // Nothing changed on disk (spurious watcher event): leave the view untouched.
+  if (keepScroll && !switching && result.html === state.lastHtml) return;
+  state.lastHtml = result.html;
+  // Read scroll after the await so it reflects where the user is now.
+  const scroll = el.contentWrap.scrollTop;
   const prev = state.tabs.find((t) => t.path === state.currentFile);
   if (prev && switching) prev.scroll = scroll;
   let tab = state.tabs.find((t) => t.path === filePath);
@@ -639,11 +643,18 @@ async function openFile(filePath, { hash, keepScroll } = {}) {
   el.statusPath.textContent = filePath;
   el.statusInfo.textContent = `${result.words.toLocaleString()} words · ~${Math.max(1, Math.round(result.words / 230))} min read`;
   buildToc(result.toc);
-  renderMermaid();
+  const mermaidDone = renderMermaid();
 
-  if (keepScroll && !switching) el.contentWrap.scrollTop = scroll;
-  else if (hash) scrollToAnchor(hash);
-  else el.contentWrap.scrollTop = tab.scroll || 0;
+  const restore = () => {
+    if (keepScroll && !switching) el.contentWrap.scrollTop = scroll;
+    else if (hash) scrollToAnchor(hash);
+    else el.contentWrap.scrollTop = tab.scroll || 0;
+  };
+  restore();
+  // Diagrams change the page height once rendered; re-apply so the position isn't clamped upward.
+  mermaidDone.then(() => {
+    if (state.currentFile === filePath) restore();
+  });
 
   api.watch(filePath); // no-op if this tab is already watched
   if (switching) {
