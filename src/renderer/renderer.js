@@ -518,7 +518,7 @@ function setupPanZoom(block) {
   });
 }
 
-async function renderMermaid() {
+async function renderMermaid(forceLight = false) {
   const blocks = el.content.querySelectorAll('.mermaid-block');
   if (!blocks.length) return;
   let mermaid;
@@ -527,7 +527,7 @@ async function renderMermaid() {
   } catch {
     return;
   }
-  const dark = findTheme(state.settings.theme).dark;
+  const dark = !forceLight && findTheme(state.settings.theme).dark;
   mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' });
   for (const block of blocks) {
     if (!block.dataset.src) block.dataset.src = block.textContent;
@@ -877,10 +877,20 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Print the current document. Diagrams are re-rendered with the light theme so they stay legible on paper.
+async function printDocument() {
+  if (!state.currentFile) return;
+  const relight = !!el.content.querySelector('.mermaid-block') && findTheme(state.settings.theme).dark;
+  if (relight) await renderMermaid(true);
+  window.print();
+  if (relight) renderMermaid();
+}
+
 api.onMenu((action) => {
   switch (action) {
     case 'open-file': return openFileDialog();
     case 'open-folder': return openFolderDialog();
+    case 'print': return printDocument();
     case 'reload': return state.currentFile && openFile(state.currentFile, { keepScroll: true });
     case 'close-tab': return state.currentFile && closeTab(state.currentFile);
     case 'next-tab': return cycleTab(1);

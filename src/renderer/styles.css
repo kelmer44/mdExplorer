@@ -776,3 +776,68 @@ pre.code-block:hover .copy-btn {
   border: 1px solid #d1242f;
   font-family: ui-monospace, monospace;
 }
+
+/* ---- Print ------------------------------------------------------------ */
+
+@media print {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+    background: #fff !important;
+    color: #000 !important;
+    display: block;
+  }
+  #toolbar,
+  #sidebar,
+  #resizer,
+  #tabbar,
+  #find-bar,
+  #toc,
+  #statusbar,
+  #settings-overlay,
+  .mm-controls {
+    display: none !important;
+  }
+  #layout,
+  #main,
+  #content-wrap {
+    display: block;
+    position: static;
+    overflow: visible;
+    height: auto;
+    min-height: 0;
+  }
+  #content {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .markdown-body a { color: #0645ad !important; }
+  .markdown-body pre,
+  .markdown-body code,
+  .markdown-body table th {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .markdown-body pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: visible;
+  }
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4 { break-after: avoid; }
+  .markdown-body pre,
+  .markdown-body blockquote,
+  .markdown-body table,
+  .markdown-body img,
+  .markdown-body tr { break-inside: avoid; }
+  .markdown-body pre.mermaid-block { cursor: auto; }
+  .mm-stage { transform: none !important; }
+  .markdown-body img,
+  .markdown-body pre.mermaid-block svg { max-width: 100%; }
+}

@@ -78,6 +78,8 @@ function buildMenu() {
         { label: 'Next Tab', accelerator: 'Ctrl+Tab', click: () => send('menu', 'next-tab') },
         { label: 'Previous Tab', accelerator: 'Ctrl+Shift+Tab', click: () => send('menu', 'prev-tab') },
         { type: 'separator' },
+        { label: 'Print…', accelerator: 'CmdOrCtrl+P', click: () => send('menu', 'print') },
+        { type: 'separator' },
         { label: 'Reload File', accelerator: 'CmdOrCtrl+R', click: () => send('menu', 'reload') },
         { label: 'Reveal in File Manager', click: () => send('menu', 'reveal') },
         { type: 'separator' },
